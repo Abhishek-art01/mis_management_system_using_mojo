@@ -71,7 +71,7 @@ export default function Login() {
     setBtnLabel('AUTHENTICATING...');
 
     try {
-      const response = await fetch('http://localhost:8000/api/login/', {
+      const response = await fetch('http://localhost:8002/api/login/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -94,7 +94,7 @@ export default function Login() {
         }, 1500);
       }
     } catch (err) {
-      setErrorMsg('Cannot reach server — is Django running on port 8000?');
+      setErrorMsg('Cannot reach server — is Django running on port 8002?');
       setBtnLabel('CONNECTION FAILED ✗');
       setTimeout(() => {
         setBtnLabel('INITIALIZE SESSION');

@@ -1,43 +1,57 @@
 import os
 import json
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
-# Base directory setup (already exists in your file)
-BASE_DIR = Path(__file__).resolve().parent.parent
+# ==========================================
+# 1. SECRET LOADING
+# ==========================================
 
-# --- ADD THIS BLOCK TO LOAD SECRETS ---
-secrets_path = os.path.join(BASE_DIR, 'secrets.json')
-with open(secrets_path) as f:
-    secrets = json.load(f)
+BASE_DIR = Path(__file__).resolve().parent.parent   # → points to /server
 
-# SECURITY WARNING: keep the secret key used in production secret!
+SECRETS_FILE = BASE_DIR / 'secrets.json'
+
+try:
+    with open(SECRETS_FILE) as f:
+        secrets = json.loads(f.read())
+except FileNotFoundError:
+    raise ImproperlyConfigured(f"Secrets file not found at: {SECRETS_FILE}")
+except json.JSONDecodeError:
+    raise ImproperlyConfigured(f"Error decoding JSON in: {SECRETS_FILE}")
+
+def get_secret(setting, secrets=secrets):
+    try:
+        return secrets[setting]
+    except KeyError:
+        raise ImproperlyConfigured(f"Set the {setting} variable in secrets.json")
 
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# ==========================================
+# 2. CORE DJANGO SETTINGS
+# ==========================================
+
+SECRET_KEY = 'django-insecure-mis-dashboard-dev-key-12345!'   # move to secrets.json in production
+
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
-
-
-# Application definition
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
-    'jazzmin',
+    'jazzmin',                              # must be before django.contrib.admin
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
     'corsheaders',
+    'api',
 ]
 
-
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',        # must be first
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',   # serves static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -45,13 +59,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-]
-CORS_ALLOW_CREDENTIALS = True          # ← REQUIRED for cookies/sessions to work
-SESSION_COOKIE_SAMESITE = 'Lax'        # ← safe default for local dev
-SESSION_COOKIE_SECURE = False
 
 ROOT_URLCONF = 'mis_core.urls'
 
@@ -71,68 +78,85 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'mis_core.wsgi.application'
-SECRET_KEY = 'django-insecure-mis-dashboard-dev-key-12345!'
+
+
+# ==========================================
+# 3. DATABASE CONFIGURATION (Supabase)
+# ==========================================
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': secrets['supabase']['database'],
-        'USER': secrets['supabase']['user'],
+        'ENGINE':   'django.db.backends.postgresql',
+        'NAME':     secrets['supabase']['database'],
+        'USER':     secrets['supabase']['user'],
         'PASSWORD': secrets['supabase']['password'],
-        'HOST': secrets['supabase']['host'],
-        'PORT': str(secrets['supabase']['port']), # Converted to string just to be safe
+        'HOST':     secrets['supabase']['host'],
+        'PORT':     str(secrets['supabase']['port']),
     }
 }
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
+
+
+# ==========================================
+# 4. PASSWORD VALIDATION & I18N
+# ==========================================
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
-USE_TZ = True
+TIME_ZONE     = 'UTC'
+USE_I18N      = True
+USE_TZ        = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
+# ==========================================
+# 5. STATIC & MEDIA FILES
+# ==========================================
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL  = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+
+# ==========================================
+# 6. CORS & SESSION SETTINGS
+# ==========================================
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+CORS_ALLOW_CREDENTIALS = True      # required for session cookies cross-origin
+
+SESSION_COOKIE_SAMESITE = 'Lax'    # safe for local dev
+SESSION_COOKIE_SECURE   = False    # set True in production (HTTPS only)
+
+
+# ==========================================
+# 7. JAZZMIN ADMIN THEME
+# ==========================================
 
 JAZZMIN_SETTINGS = {
-    # title of the window (Will default to current_admin_site.site_title if absent or None)
-    "site_title": "MIS Admin",
-
-    # Title on the login screen (19 chars max)
-    "site_header": "MIS Management",
-
-    # Title on the brand (19 chars max)
-    "site_brand": "MIS System",
-
-    # Welcome text on the login screen
-    "welcome_sign": "Welcome to the MIS Management System",
-
-    # Copyright on the footer
-    "copyright": "Project-767",
+    "site_title":    "MIS Admin",
+    "site_header":   "MIS Management",
+    "site_brand":    "MIS System",
+    "welcome_sign":  "Welcome to the MIS Management System",
+    "copyright":     "Project-767",
 }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

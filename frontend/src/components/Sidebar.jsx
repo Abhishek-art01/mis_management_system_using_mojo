@@ -1,67 +1,175 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
+/* ── Icons ─────────────────────────────────────── */
+const IcoLayers = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" strokeWidth="1.5">
+    <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+  </svg>
+);
+const IcoDashboard = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+    <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+  </svg>
+);
+const IcoMap = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+    <line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+  </svg>
+);
+const IcoTruck = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <rect x="1" y="3" width="15" height="13"/>
+    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+    <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+  </svg>
+);
+const IcoGps = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+    <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+    <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+  </svg>
+);
+const IcoDownload = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+);
+const IcoLogout = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+  </svg>
+);
+const IcoChevron = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <polyline points="9 18 15 12 9 6"/>
+  </svg>
+);
+const IcoMenu = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <line x1="3" y1="12" x2="21" y2="12"/>
+    <line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+);
+
+const NAV = [
+  { label: 'DASHBOARD',       sub: 'Control Center', icon: <IcoDashboard />, path: '/dashboard'       },
+  { label: 'LOCALITY MGR',    sub: 'Zone Mapping',   icon: <IcoMap />,       path: '/locality-manager'},
+  { label: 'VEHICLE LIST',    sub: 'Fleet Tracker',  icon: <IcoTruck />,     path: '/vehicle-list'    },
+  { label: 'GPS CHECKER',     sub: 'Signal Monitor', icon: <IcoGps />,       path: '/gps-checker'     },
+  { label: 'DOWNLOADS',       sub: 'Report Files',   icon: <IcoDownload />,  path: '/downloads'       },
+];
+
 export default function Sidebar() {
-    const [isOpen, setIsOpen] = useState(false);
-    const location = useLocation(); // To highlight active link
+  const [open,    setOpen]    = useState(false);
+  const [clock,   setClock]   = useState('--:--:--');
+  const [mounted, setMounted] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    const toggleSidebar = () => {
-        setIsOpen(!isOpen);
-    };
+  useEffect(() => { setMounted(true); }, []);
 
-    // Close sidebar when a link is clicked (better UX on mobile)
-    const handleLinkClick = () => {
-        setIsOpen(false);
-    };
+  useEffect(() => {
+    const tick = () => setClock(new Date().toTimeString().slice(0, 8));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
-    return (
-        <>
-            {/* The "Three Line" Hamburger Button - Always visible in top-left */}
-            <button className="hamburger-btn" onClick={toggleSidebar}>
-                ☰
-            </button>
+  const close = () => setOpen(false);
 
-            {/* Overlay to close menu when clicking outside */}
-            <div
-                className={`sidebar-overlay ${isOpen ? 'active' : ''}`}
-                onClick={toggleSidebar}
-            ></div>
+  return (
+    <>
+      {/* ── Hamburger trigger ─────────────────────── */}
+      <button
+        className={`sb-trigger${open ? ' sb-trigger--active' : ''}`}
+        onClick={() => setOpen(o => !o)}
+        aria-label="Toggle menu"
+      >
+        {open ? '✕' : <IcoMenu />}
+      </button>
 
-            {/* The Sidebar Menu */}
-            <div className={`sidebar-container ${isOpen ? 'open' : ''}`}>
-                <div className="sidebar-header">
-                    <h2>Menu</h2>
-                    <button className="close-btn" onClick={toggleSidebar}>✖</button>
-                </div>
+      {/* ── Overlay ───────────────────────────────── */}
+      <div className={`sb-overlay${open ? ' sb-overlay--on' : ''}`} onClick={close} />
 
-                <nav className="sidebar-nav">
-                    <Link
-                        to="/locality-manager"
-                        className={`nav-item ${location.pathname === '/locality-manager' ? 'active' : ''}`}
-                        onClick={handleLinkClick}
-                    >
-                        🏙️ Locality Manager
-                    </Link>
+      {/* ── Sidebar panel ─────────────────────────── */}
+      <aside className={`sb-panel${open ? ' sb-panel--open' : ''}${mounted ? ' sb-mounted' : ''}`}>
 
-                    {/* NEW VEHICLE LIST SECTION */}
-                    <Link
-                        to="/vehicle-list"
-                        className={`nav-item ${location.pathname === '/vehicle-list' ? 'active' : ''}`}
-                        onClick={handleLinkClick}
-                    >
-                        🚚 Vehicle List
-                    </Link>
+        {/* Corner brackets */}
+        <span className="sb-corner sb-corner--tr" />
+        <span className="sb-corner sb-corner--bl" />
 
-                    <Link
-                        to="/dashboard"
-                        className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
-                        onClick={handleLinkClick}
-                    >
-                        📊 Dashboard
-                    </Link>
-                </nav>
-            </div>
-        </>
-    );
+        {/* Scan-line overlay */}
+        <div className="sb-scan" />
+
+        {/* ── Header ────────────────────────────── */}
+        <div className="sb-head">
+          <div className="sb-logo">
+            <IcoLayers />
+          </div>
+          <div className="sb-brand">
+            <span className="sb-brand-name">NEXUS OS</span>
+            <span className="sb-brand-sub">MIS SYSTEM // v4.2</span>
+          </div>
+        </div>
+
+        {/* Status strip */}
+        <div className="sb-status">
+          <span className="sb-status-dot" />
+          <span>ONLINE</span>
+          <span className="sb-status-time">{clock}</span>
+        </div>
+
+        <div className="sb-divider">
+          <span>// NAV MODULES</span>
+        </div>
+
+        {/* ── Nav links ─────────────────────────── */}
+        <nav className="sb-nav">
+          {NAV.map(item => {
+            const active = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`sb-link${active ? ' sb-link--active' : ''}`}
+                onClick={close}
+              >
+                {active && <span className="sb-link-bar" />}
+                <span className="sb-link-icon">{item.icon}</span>
+                <span className="sb-link-body">
+                  <span className="sb-link-label">{item.label}</span>
+                  <span className="sb-link-sub">{item.sub}</span>
+                </span>
+                <span className="sb-link-arrow"><IcoChevron /></span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* ── Footer ────────────────────────────── */}
+        <div className="sb-footer">
+          <div className="sb-divider"><span>// SESSION</span></div>
+          <button
+            className="sb-logout"
+            onClick={() => { close(); navigate('/'); }}
+          >
+            <IcoLogout />
+            <span className="sb-link-body">
+              <span className="sb-link-label">EXIT SYSTEM</span>
+              <span className="sb-link-sub">Terminate Session</span>
+            </span>
+          </button>
+          <p className="sb-enc">ENC: AES-256 // SECURE</p>
+        </div>
+      </aside>
+    </>
+  );
 }

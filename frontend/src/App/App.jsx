@@ -1,61 +1,54 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-
-// --- Page Imports ---
-// Assuming these are in your src/ folder based on your file tree
-import Login from '../Login/Login';
-import Dashboard from '../Dashboard/Dashboard';
-import LocalityChecker from '../LocalityChecker/LocalityChecker'; // This is your Locality Manager
-import VehicleList from '../VehicleList/VehicleList';         // The new file
-// import GPSChecker from '../GPSChecker/GPSChecker';
-import Downloads from '../Downloads/Downloads';
-
-// --- Component Imports ---
-// Assuming Sidebar was moved to components folder as discussed
+import { SidebarProvider, useSidebar } from '../components/SidebarContext';
 import Sidebar from '../components/Sidebar';
 
+import Login          from '../Login/Login';
+import Dashboard      from '../Dashboard/Dashboard';
+import LocalityChecker from '../LocalityChecker/LocalityChecker';
+import VehicleList    from '../VehicleList/VehicleList';
+// import GPSChecker     from '../GPSChecker/GPSChecker';
+import Downloads      from '../Downloads/Downloads';
 
+import './App.css';
 
-// We create a helper component so we can use the 'useLocation' hook
-// to hide the Sidebar on the Login page.
+const SB_WIDTH = 270;
+
 function AppContent() {
-  const location = useLocation();
-  const isLoginPage = location.pathname === '/';
+  const location   = useLocation();
+  const { open }   = useSidebar();
+  const isLogin    = location.pathname === '/';
 
   return (
-    <div className="app-wrapper">
-      {/* Only show Sidebar if we are NOT on the login page */}
-      {!isLoginPage && <Sidebar />}
+    <div className="app-shell">
+      {!isLogin && <Sidebar />}
 
-      <main className="main-content">
+      <main
+        className="app-main"
+        style={{
+          marginLeft: (!isLogin && open) ? SB_WIDTH : 0,
+          transition: 'margin-left 0.38s cubic-bezier(.16,1,.3,1)',
+        }}
+      >
         <Routes>
-          {/* Login */}
-          <Route path="/" element={<Login />} />
-
-          {/* Dashboard */}
-          <Route path="/dashboard" element={<Dashboard />} />
-
-          {/* Locality Manager (Updated path to match Sidebar) */}
+          <Route path="/"                element={<Login />} />
+          <Route path="/dashboard"       element={<Dashboard />} />
           <Route path="/locality-manager" element={<LocalityChecker />} />
-
-          {/* NEW: Vehicle List */}
-          <Route path="/vehicle-list" element={<VehicleList />} />
-
-          {/* Other Tools */}
-          {/* <Route path="/gps-checker" element={<GPSChecker />} /> */}
-          <Route path="/downloads" element={<Downloads />} />
+          <Route path="/vehicle-list"    element={<VehicleList />} />
+          {/* <Route path="/gps-checker"     element={<GPSChecker />} /> */}
+          <Route path="/downloads"       element={<Downloads />} />
         </Routes>
       </main>
     </div>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <SidebarProvider>
+        <AppContent />
+      </SidebarProvider>
     </BrowserRouter>
   );
 }
-
-export default App;

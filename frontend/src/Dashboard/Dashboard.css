@@ -12,7 +12,7 @@
   --glow:      #00d4ff;
   --glow2:     #00ff9d;
   --glow-dim:  rgba(0, 212, 255, 0.12);
-  --text:      #c8f0ff;
+  --text:      #ffffff;
   --muted:     #3a7a9c;
   --muted2:    #2a5a7a;
   --danger:    #ff3e5b;
@@ -37,6 +37,7 @@
   font-family: var(--font-mono);
   position: relative;
   overflow-x: hidden;
+  text-shadow: 0 0 2px rgba(200, 240, 255, 0.2);
 }
 
 /* Animated dot grid */

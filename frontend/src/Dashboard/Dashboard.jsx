@@ -162,10 +162,9 @@ export default function Dashboard() {
             {/* ── Top Nav ───────────────────────────────────────────────── */}
             <nav className="db-nav">
                 <div className="db-nav-brand">
-                    <div className="db-nav-logo"><IcoLayers /></div>
                     <div>
-                        <span className="db-nav-title">NEXUS OS</span>
-                        <span className="db-nav-sub">MIS CONTROL CENTER</span>
+                        <span className="db-nav-title"style={{ marginLeft: "40px" }}>MIS CONTROL CENTER</span>
+                        <span className="db-nav-sub"></span>
                     </div>
                 </div>
 

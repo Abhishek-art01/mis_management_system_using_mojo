@@ -38,13 +38,14 @@ const IconSSO = () => (
 
 /* ── Login Component ────────────────────────────── */
 export default function Login() {
-  const [identifier, setIdentifier]   = useState('');
-  const [password,   setPassword]     = useState('');
-  const [remember,   setRemember]     = useState(false);
-  const [btnLabel,   setBtnLabel]     = useState('INITIALIZE SESSION');
-  const [loading,    setLoading]      = useState(false);
-  const [clock,      setClock]        = useState('--:--:--');
-  const [sessionId,  setSessionId]    = useState('----');
+  const [identifier, setIdentifier] = useState('');
+  const [password,   setPassword]   = useState('');
+  const [remember,   setRemember]   = useState(false);
+  const [btnLabel,   setBtnLabel]   = useState('INITIALIZE SESSION');
+  const [loading,    setLoading]    = useState(false);
+  const [errorMsg,   setErrorMsg]   = useState('');
+  const [clock,      setClock]      = useState('--:--:--');
+  const [sessionId,  setSessionId]  = useState('----');
 
   /* Live clock */
   useEffect(() => {
@@ -62,41 +63,49 @@ export default function Login() {
     setSessionId(sid);
   }, []);
 
-  /* Login animation */
+  /* Login handler */
   const handleLogin = async () => {
-  if (loading) return;
-  setLoading(true);
-  setBtnLabel('AUTHENTICATING...');
+    if (loading) return;
+    setErrorMsg('');
+    setLoading(true);
+    setBtnLabel('AUTHENTICATING...');
 
-  try {
-    const response = await fetch('http://localhost:8000/api/login/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: identifier, password }),
-    });
+    try {
+      const response = await fetch('http://localhost:8000/api/login/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username: identifier, password }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok && data.success) {
-      setBtnLabel('ACCESS GRANTED ✓');
-      setTimeout(() => {
-        // redirect or store token here
-        window.location.href = '/dashboard';
-      }, 1000);
-    } else {
-      setBtnLabel('ACCESS DENIED ✗');
+      if (response.ok && data.success) {
+        setBtnLabel('ACCESS GRANTED ✓');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
+      } else {
+        setErrorMsg(data.message || 'Invalid credentials');
+        setBtnLabel('ACCESS DENIED ✗');
+        setTimeout(() => {
+          setBtnLabel('INITIALIZE SESSION');
+          setLoading(false);
+        }, 1500);
+      }
+    } catch (err) {
+      setErrorMsg('Cannot reach server — is Django running on port 8000?');
+      setBtnLabel('CONNECTION FAILED ✗');
       setTimeout(() => {
         setBtnLabel('INITIALIZE SESSION');
         setLoading(false);
       }, 1500);
     }
-  } catch (err) {
-    setBtnLabel('CONNECTION FAILED ✗');
-    setTimeout(() => {
-      setBtnLabel('INITIALIZE SESSION');
-      setLoading(false);
-    }, 1500);
-  }
+  };
+
+  /* Enter key submits */
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleLogin();
   };
 
   return (
@@ -117,22 +126,30 @@ export default function Login() {
 
         {/* Panel */}
         <div className="panel">
+
           {/* Logo */}
           <div className="logo-row">
             <div className="logo-icon">
               <IconLayers />
             </div>
             <div className="logo-text">
-              <h1>NEXUS OS</h1>
+              <h1>MANAGEMENT INFORMATION SYSTEM </h1>
               <p className="type-cursor">AUTHENTICATION PORTAL</p>
             </div>
           </div>
 
           <div className="section-label">USER CREDENTIALS</div>
 
+          {/* Error banner */}
+          {errorMsg && (
+            <div className="error-banner">
+              <span className="error-prefix">ERR //</span> {errorMsg}
+            </div>
+          )}
+
           {/* Identifier field */}
           <div className="field">
-            <label htmlFor="identifier">IDENTIFIER</label>
+            <label htmlFor="identifier">USER NAME</label>
             <div className="input-wrap">
               <span className="input-icon"><IconUser /></span>
               <input
@@ -142,6 +159,7 @@ export default function Login() {
                 autoComplete="off"
                 value={identifier}
                 onChange={e => setIdentifier(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
               <div className="focus-line" />
             </div>
@@ -149,7 +167,7 @@ export default function Login() {
 
           {/* Password field */}
           <div className="field">
-            <label htmlFor="password">ACCESS KEY</label>
+            <label htmlFor="password">PASSWORD</label>
             <div className="input-wrap">
               <span className="input-icon"><IconLock /></span>
               <input
@@ -159,6 +177,7 @@ export default function Login() {
                 autoComplete="off"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
               <div className="focus-line" />
             </div>
@@ -171,9 +190,9 @@ export default function Login() {
               <div className={`custom-check${remember ? ' checked' : ''}`}>
                 {remember && '✓'}
               </div>
-              PERSIST SESSION
+              REMEMBER ME
             </label>
-            <a href="#" className="forgot-link">RECOVER ACCESS →</a>
+            <a href="#" className="forgot-link">RECOVER PASSWORD →</a>
           </div>
 
           {/* Submit */}
@@ -194,19 +213,19 @@ export default function Login() {
               <IconGithub /> GITHUB
             </button>
             <button className="btn-oauth">
-              <IconSSO /> SSO
+              <IconSSO /> GMAIL
             </button>
           </div>
 
           {/* Footer */}
           <div className="panel-footer">
-            NO ACCOUNT?&nbsp;<a href="#">REQUEST ACCESS</a>
+            NO ACCOUNT?&nbsp;<a href="#">CREATE ACCOUNT</a>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="bottom-bar">
-          <span>SYS v4.2.1 // ENC:AES-256</span>
+          <span></span>
           <span>SID: {sessionId}</span>
         </div>
       </div>

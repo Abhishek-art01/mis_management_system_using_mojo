@@ -2,17 +2,17 @@
 
 /* ── CSS Variables ─────────────────────────────── */
 :root {
-  --bg:          #030a10;
-  --panel:       #050d17;
-  --border:      #0d4a6e;
-  --glow:        #00d4ff;
-  --glow2:       #00ff9d;
-  --dim:         #0a2035;
-  --text:        #c8f0ff;
-  --muted:       #3a7a9c;
-  --danger:      #ff3e5b;
-  --font-mono:   'Share Tech Mono', monospace;
-  --font-display:'Orbitron', sans-serif;
+  --bg:           #030a10;
+  --panel:        #050d17;
+  --border:       #0d4a6e;
+  --glow:         #00d4ff;
+  --glow2:        #00ff9d;
+  --dim:          #0a2035;
+  --text:         #c8f0ff;
+  --muted:        #3a7a9c;
+  --danger:       #ff3e5b;
+  --font-mono:    'Share Tech Mono', monospace;
+  --font-display: 'Orbitron', sans-serif;
 }
 
 /* ── Reset / Base ──────────────────────────────── */
@@ -143,8 +143,8 @@
 }
 
 @keyframes blink {
-  0%,100% { opacity: 1;   }
-  50%      { opacity: 0.3; }
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.3; }
 }
 
 /* ── Panel ─────────────────────────────────────── */
@@ -185,53 +185,45 @@
 .logo-icon {
   width: 44px;
   height: 44px;
-  border: 1px solid var(--glow);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 9px;
   position: relative;
   flex-shrink: 0;
-  box-shadow:
-    0 0 16px rgba(0,212,255,0.2),
-    inset 0 0 10px rgba(0,212,255,0.05);
 }
 
 .logo-icon::before {
   content: '';
   position: absolute;
-  top: 4px; left: 4px; right: 4px; bottom: 4px;
-  border: 1px solid rgba(0,212,255,0.2);
+  inset: 2px;
+  border: 1px solid rgba(0,212,255,0.1);
 }
-
-.logo-icon svg { width: 22px; height: 22px; }
 
 .logo-text h1 {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 900;
-  letter-spacing: 4px;
-  color: #fff;
+  letter-spacing: 5px;
+  color: var(--glow);
+  text-shadow: 0 0 20px rgba(0,212,255,0.4);
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.type-cursor {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--muted);
   text-transform: uppercase;
 }
 
-.logo-text p {
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 2px;
-  margin-top: 2px;
-}
-
 .type-cursor::after {
-  content: '█';
-  animation: cursorBlink 1s step-end infinite;
-  color: var(--glow);
-  font-size: 11px;
+  content: '▋';
+  animation: blink 1s step-end infinite;
+  color: var(--glow2);
   margin-left: 2px;
-}
-
-@keyframes cursorBlink {
-  0%,100% { opacity: 1; }
-  50%      { opacity: 0; }
 }
 
 /* ── Section label ─────────────────────────────── */
@@ -241,19 +233,43 @@
   color: var(--muted);
   text-transform: uppercase;
   margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--dim);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.section-label::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, var(--border), transparent);
+.section-label::before {
+  content: '//';
+  color: var(--glow);
+  font-size: 11px;
 }
 
-/* ── Form field ────────────────────────────────── */
+/* ── Error banner ──────────────────────────────── */
+.error-banner {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,62,91,0.35);
+  background: rgba(255,62,91,0.07);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--danger);
+  text-transform: uppercase;
+  animation: errorFlash 0.3s ease;
+}
+
+@keyframes errorFlash {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.error-prefix {
+  color: var(--danger);
+  font-weight: bold;
+}
+
+/* ── Field ─────────────────────────────────────── */
 .field {
   margin-bottom: 18px;
 }
@@ -261,35 +277,37 @@
 .field label {
   display: block;
   font-size: 9px;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
+  letter-spacing: 3px;
   color: var(--muted);
+  text-transform: uppercase;
   margin-bottom: 8px;
 }
 
+/* ── Input wrap ────────────────────────────────── */
 .input-wrap {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
-.input-wrap .input-icon {
+.input-icon {
   position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 12px;
   color: var(--muted);
   display: flex;
   align-items: center;
   pointer-events: none;
+  transition: color 0.2s;
 }
 
 .input-wrap input {
   width: 100%;
-  background: rgba(0,212,255,0.03);
+  background: var(--dim);
   border: 1px solid var(--border);
   color: var(--text);
   font-family: var(--font-mono);
   font-size: 13px;
-  padding: 13px 14px 13px 40px;
+  padding: 12px 14px 12px 40px;
   outline: none;
   letter-spacing: 1px;
   border-radius: 1px;
@@ -304,6 +322,10 @@
   box-shadow:
     0 0 0 1px rgba(0,212,255,0.15),
     0 0 20px rgba(0,212,255,0.05);
+}
+
+.input-wrap:focus-within .input-icon {
+  color: var(--glow);
 }
 
 .focus-line {

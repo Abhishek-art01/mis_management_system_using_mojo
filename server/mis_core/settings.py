@@ -33,22 +33,6 @@ INSTALLED_APPS = [
     'corsheaders',
 ]
 
-JAZZMIN_SETTINGS = {
-    # title of the window (Will default to current_admin_site.site_title if absent or None)
-    "site_title": "MIS Admin",
-
-    # Title on the login screen (19 chars max)
-    "site_header": "MIS Management",
-
-    # Title on the brand (19 chars max)
-    "site_brand": "MIS System",
-
-    # Welcome text on the login screen
-    "welcome_sign": "Welcome to the MIS Management System",
-
-    # Copyright on the footer
-    "copyright": "Project-767",
-}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -63,8 +47,12 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  
+    "http://localhost:5173",
 ]
+CORS_ALLOW_CREDENTIALS = True          # ← REQUIRED for cookies/sessions to work
+SESSION_COOKIE_SAMESITE = 'Lax'        # ← safe default for local dev
+SESSION_COOKIE_SECURE = False
+
 ROOT_URLCONF = 'mis_core.urls'
 
 TEMPLATES = [
@@ -131,3 +119,20 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+JAZZMIN_SETTINGS = {
+    # title of the window (Will default to current_admin_site.site_title if absent or None)
+    "site_title": "MIS Admin",
+
+    # Title on the login screen (19 chars max)
+    "site_header": "MIS Management",
+
+    # Title on the brand (19 chars max)
+    "site_brand": "MIS System",
+
+    # Welcome text on the login screen
+    "welcome_sign": "Welcome to the MIS Management System",
+
+    # Copyright on the footer
+    "copyright": "Project-767",
+}

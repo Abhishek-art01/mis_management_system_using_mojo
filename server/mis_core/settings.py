@@ -16,7 +16,7 @@ with open(secrets_path) as f:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -28,9 +28,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -40,6 +42,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  
+]
 ROOT_URLCONF = 'mis_core.urls'
 
 TEMPLATES = [
@@ -58,6 +63,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'mis_core.wsgi.application'
+SECRET_KEY = 'django-insecure-mis-dashboard-dev-key-12345!'
 
 DATABASES = {
     'default': {

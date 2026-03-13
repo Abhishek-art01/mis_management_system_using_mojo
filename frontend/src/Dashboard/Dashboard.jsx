@@ -66,7 +66,7 @@ export default function Dashboard() {
                 {/* Card header */}
                 <div className="db-card-head">
                     <div className="db-card-title-group">
-                        <span className="db-card-eyebrow">{isCurrent ? '// ACTIVE PERIOD' : '// PREVIOUS PERIOD'}</span>
+                        <span className="db-card-eyebrow">{isCurrent ? 'ACTIVE PERIOD' : 'PREVIOUS PERIOD'}</span>
                         <h2 className="db-card-month">{month} <em>{year}</em></h2>
                     </div>
                     <div className="db-card-badges">

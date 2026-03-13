@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Layout.css';
 
-/* ── Sidebar Context (built-in, no separate file needed) ─────────────── */
+/* ── Sidebar Context ─────────────────────────────────────────────────── */
 const SidebarContext = createContext();
 
 export function SidebarProvider({ children }) {
@@ -27,6 +27,8 @@ const IcoGps     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="n
 const IcoDl      = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
 const IcoLogout  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 const IcoChevron = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>;
+const IcoMenu    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6"  x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
+const IcoClose   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 
 /* ── Nav items ───────────────────────────────────────────────────────── */
 const NAV = [
@@ -51,18 +53,15 @@ export default function Sidebar() {
         return () => clearInterval(id);
     }, []);
 
-    const close = () => setOpen(false);
 
     return (
         <>
-            {/* Hamburger toggle */}
-            <button
-                className={`sb-trigger${open ? ' sb-trigger--open' : ''}`}
-                style={{ left: open ? 278 : 16 }}
-                onClick={() => setOpen(o => !o)}
-            >
-                {open ? '✕' : '☰'}
-            </button>
+            {/* Floating open button — shown only when sidebar is closed */}
+            {!open && (
+                <button className="sb-float-open" onClick={() => setOpen(true)}>
+                    <IcoMenu />
+                </button>
+            )}
 
             {/* Sidebar panel */}
             <aside className={`sb-panel${open ? ' sb-panel--open' : ''}`}>
@@ -71,13 +70,16 @@ export default function Sidebar() {
                 <span className="sb-corner sb-corner--tr" />
                 <span className="sb-corner sb-corner--bl" />
 
-                {/* Header */}
+                {/* Header row with close button inside */}
                 <div className="sb-head">
                     <div className="sb-logo"><IcoLayers /></div>
-                    <div>
+                    <div className="sb-brand">
                         <span className="sb-brand-name">NEXUS OS</span>
                         <span className="sb-brand-sub">MIS SYSTEM // v4.2</span>
                     </div>
+                    <button className="sb-close" onClick={() => setOpen(false)}>
+                        <IcoClose />
+                    </button>
                 </div>
 
                 {/* Status */}
@@ -98,7 +100,7 @@ export default function Sidebar() {
                                 key={item.path}
                                 to={item.path}
                                 className={`sb-link${active ? ' sb-link--on' : ''}`}
-                                onClick={close}
+                                onClick={() => setOpen(false)}
                             >
                                 {active && <span className="sb-bar" />}
                                 <span className="sb-link-ico">{item.icon}</span>
@@ -115,7 +117,7 @@ export default function Sidebar() {
                 {/* Footer */}
                 <div className="sb-foot">
                     <div className="sb-rule"><span>// SESSION</span></div>
-                    <button className="sb-logout" onClick={() => { close(); navigate('/'); }}>
+                    <button className="sb-logout" onClick={() => { setOpen(false); navigate('/'); }}>
                         <IcoLogout />
                         <span className="sb-link-body">
                             <span className="sb-link-lbl">EXIT SYSTEM</span>

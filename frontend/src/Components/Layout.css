@@ -46,18 +46,20 @@
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  margin-left: 30px;
 }
 
 .hdr-logo {
   width: 36px;
   height: 36px;
-  border: 1px solid var(--hdr-border);
+  border: 2px solid var(--hdr-border);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--hdr-muted);
   position: relative;
   flex-shrink: 0;
+  margin-left: 30px; 
 }
 .hdr-logo::before {
   content: '';

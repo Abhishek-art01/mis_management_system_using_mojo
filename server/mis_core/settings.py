@@ -2,37 +2,46 @@ import os
 import json
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
+import dj_database_url
 
 # ==========================================
-# 1. SECRET LOADING
+# 1. SECRET LOADING (Vercel + Local Ready)
 # ==========================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent   # → points to /server
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRETS_FILE = BASE_DIR / 'secrets.json'
+secrets = {}
 
-try:
-    with open(SECRETS_FILE) as f:
-        secrets = json.loads(f.read())
-except FileNotFoundError:
-    raise ImproperlyConfigured(f"Secrets file not found at: {SECRETS_FILE}")
-except json.JSONDecodeError:
-    raise ImproperlyConfigured(f"Error decoding JSON in: {SECRETS_FILE}")
-
-def get_secret(setting, secrets=secrets):
+# Only try to load the file if it exists (prevents crashes on Vercel)
+if os.path.exists(SECRETS_FILE):
     try:
-        return secrets[setting]
-    except KeyError:
-        raise ImproperlyConfigured(f"Set the {setting} variable in secrets.json")
+        with open(SECRETS_FILE) as f:
+            secrets = json.load(f)
+    except json.JSONDecodeError:
+        raise ImproperlyConfigured(f"Error decoding JSON in: {SECRETS_FILE}")
+
+def get_secret(setting_name):
+    # 1st Check: Vercel / OS Environment Variables
+    if setting_name in os.environ:
+        return os.environ[setting_name]
+    
+    # 2nd Check: Local secrets.json file
+    if setting_name in secrets:
+        return secrets[setting_name]
+        
+    # If not found anywhere, crash with a helpful message
+    raise ImproperlyConfigured(f"Missing secret: {setting_name}. Set it in secrets.json or Vercel Environment Variables.")
 
 
 # ==========================================
 # 2. CORE DJANGO SETTINGS
 # ==========================================
 
-SECRET_KEY = 'django-insecure-mis-dashboard-dev-key-12345!'   # move to secrets.json in production
-
-DEBUG = True
+# Dynamically load crucial settings
+SECRET_KEY = get_secret('SECRET_KEY')
+# Converts string "True" from env var into an actual boolean
+DEBUG = str(get_secret('DEBUG')).lower() in ['true', '1', 't'] 
 
 ALLOWED_HOSTS = ['*']
 
@@ -43,7 +52,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary_storage',                   # Cloudinary must be before staticfiles
     'django.contrib.staticfiles',
+    'cloudinary',                           # Cloudinary app
     'corsheaders',
     'api',
 ]
@@ -84,15 +95,9 @@ WSGI_APPLICATION = 'mis_core.wsgi.application'
 # 3. DATABASE CONFIGURATION (Supabase)
 # ==========================================
 
+# dj_database_url handles parsing the long connection string Vercel provides.
 DATABASES = {
-    'default': {
-        'ENGINE':   'django.db.backends.postgresql',
-        'NAME':     secrets['supabase']['database'],
-        'USER':     secrets['supabase']['user'],
-        'PASSWORD': secrets['supabase']['password'],
-        'HOST':     secrets['supabase']['host'],
-        'PORT':     str(secrets['supabase']['port']),
-    }
+    'default': dj_database_url.parse(get_secret('DATABASE_URL'))
 }
 
 
@@ -114,18 +119,29 @@ USE_TZ        = True
 
 
 # ==========================================
-# 5. STATIC & MEDIA FILES
+# 5. STATIC & MEDIA FILES (Cloudinary)
 # ==========================================
 
-STATIC_URL  = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Cloudinary Credentials
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': get_secret('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': get_secret('CLOUDINARY_API_KEY'),
+    'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
+}
+
+# Route media files to Cloudinary
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 MEDIA_URL  = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Standard Static Files (Handled by WhiteNoise)
+STATIC_URL  = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
@@ -144,7 +160,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True      # required for session cookies cross-origin
 
 SESSION_COOKIE_SAMESITE = 'Lax'    # safe for local dev
-SESSION_COOKIE_SECURE   = False    # set True in production (HTTPS only)
+SESSION_COOKIE_SECURE   = not DEBUG # Will be True in Prod, False locally
 
 
 # ==========================================
@@ -160,19 +176,3 @@ JAZZMIN_SETTINGS = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-import os
-
-# Cloudinary Credentials (Load this from your .env file locally, and Vercel Environment Variables in production)
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
-
-# Route media files to Cloudinary
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-# Standard Static Files (Handled by WhiteNoise)
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

@@ -92,15 +92,29 @@ WSGI_APPLICATION = 'mis_core.wsgi.application'
 
 
 # ==========================================
-# 3. DATABASE CONFIGURATION (Supabase)
+# 3. DATABASE CONFIGURATION (Supabase/Neon)
 # ==========================================
 
-# dj_database_url handles parsing the long connection string Vercel provides.
-DATABASES = {
-    'default': dj_database_url.parse(get_secret('DATABASE_URL'))
-}
+# Safely check for DATABASE_URL (returns an empty string if it doesn't exist)
+db_url = os.environ.get('DATABASE_URL', secrets.get('DATABASE_URL', ''))
 
-
+if db_url.startswith('postgres://') or db_url.startswith('postgresql://'):
+    # On Vercel: Let dj_database_url handle the connection string
+    DATABASES = {
+        'default': dj_database_url.parse(db_url)
+    }
+else:
+    # Locally: Map it manually using the individual fields from secrets.json
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.postgresql',
+            'NAME':     secrets.get('DATABASE_NAME', ''),
+            'USER':     secrets.get('DATABASE_USER', ''),
+            'PASSWORD': secrets.get('DATABASE_PASSWORD', ''),
+            'HOST':     secrets.get('DATABASE_HOST', ''),
+            'PORT':     secrets.get('DATABASE_PORT', '5432'),
+        }
+    }
 # ==========================================
 # 4. PASSWORD VALIDATION & I18N
 # ==========================================

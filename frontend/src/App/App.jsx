@@ -1,12 +1,11 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { SidebarProvider, useSidebar } from '../components/SidebarContext';
-import Sidebar from '../components/Sidebar';
-
+import Sidebar from '../Components/Sidebar';
 import Login          from '../Login/Login';
 import Dashboard      from '../Dashboard/Dashboard';
 import LocalityChecker from '../LocalityChecker/LocalityChecker';
 import VehicleList    from '../VehicleList/VehicleList';
+import Sidebar, { SidebarProvider } from './Components/Sidebar.jsx';
 // import GPSChecker     from '../GPSChecker/GPSChecker';
 import Downloads      from '../Downloads/Downloads';
 
@@ -47,7 +46,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <SidebarProvider>
-        <AppContent />
+        <Sidebar />
+        {/* your routes */}
       </SidebarProvider>
     </BrowserRouter>
   );

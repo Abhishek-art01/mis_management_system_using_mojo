@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Header from '../Components/Header.jsx';
 import './Dashboard.css';
 
-/* ── Icons ────────────────────────────────────────────────────────────── */
+/* ── Icons (dashboard-only) ───────────────────────────────────────────── */
 const IcoCheck    = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>;
 const IcoClock    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-const IcoCalendar = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-const IcoLayers   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" strokeWidth="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>;
-const IcoMap      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>;
-const IcoGps      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>;
-const IcoDownload = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
-const IcoTruck    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
-const IcoLogout   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+const IcoPin      = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+const IcoTime     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+const IcoToll     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg>;
+const IcoChevron  = ({ open }) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}><polyline points="6 9 12 15 18 9"/></svg>;
+const IcoPlus     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
 /* ── Main Component ────────────────────────────────────────────────────── */
 export default function Dashboard() {
@@ -19,16 +18,9 @@ export default function Dashboard() {
     const [filterDate, setFilterDate] = useState(new Date().toISOString().slice(0, 7));
     const [data,       setData]       = useState(null);
     const [loading,    setLoading]    = useState(true);
-    const [clock,      setClock]      = useState('--:--:--');
     const [mounted,    setMounted]    = useState(false);
-
-    /* Clock */
-    useEffect(() => {
-        const tick = () => setClock(new Date().toTimeString().slice(0, 8));
-        tick();
-        const id = setInterval(tick, 1000);
-        return () => clearInterval(id);
-    }, []);
+    const [auditOpen,  setAuditOpen]  = useState(true);
+    const [activeAudit, setActiveAudit] = useState(null);
 
     /* Mount animation trigger */
     useEffect(() => { setMounted(true); }, []);
@@ -150,6 +142,34 @@ export default function Dashboard() {
         );
     };
 
+    /* ── Audit Trips Section ─────────────────────────────────────────────── */
+    const auditSubs = [
+        {
+            id: 'locality',
+            icon: <IcoPin />,
+            label: 'FIX LOCALITY',
+            desc: 'Correct and update locality assignments for trip records',
+            tag: 'GEO',
+            path: '/locality-manager',
+        },
+        {
+            id: 'gps',
+            icon: <IcoTime />,
+            label: 'ADD GPS TIME',
+            desc: 'Attach and validate GPS timestamps to trip entries',
+            tag: 'TIME',
+            path: '/gps-checker',
+        },
+        {
+            id: 'toll',
+            icon: <IcoToll />,
+            label: 'ADD TOLL DETAILS',
+            desc: 'Enter toll booth data and expense records for each trip',
+            tag: 'FINANCE',
+            path: '/toll-details',
+        },
+    ];
+
     /* ── Render ──────────────────────────────────────────────────────────── */
     return (
         <div className={`db-root${mounted ? ' db-mounted' : ''}`}>
@@ -160,44 +180,10 @@ export default function Dashboard() {
             <div className="db-orb db-orb-2" />
 
             {/* ── Top Nav ───────────────────────────────────────────────── */}
-            <nav className="db-nav">
-                <div className="db-nav-brand">
-                    <div>
-                        <span className="db-nav-title"style={{ marginLeft: "40px" }}>MIS CONTROL CENTER</span>
-                        <span className="db-nav-sub"></span>
-                    </div>
-                </div>
-
-                <div className="db-nav-links">
-                    {[
-                        { icon: <IcoMap />,      label: 'LOCALITY', path: '/locality-manager' },
-                        { icon: <IcoGps />,      label: 'GPS',      path: '/gps-checker'      },
-                        { icon: <IcoTruck />,    label: 'VEHICLES', path: '/vehicle-list'     },
-                        { icon: <IcoDownload />, label: 'DOWNLOADS',path: '/downloads'        },
-                    ].map(n => (
-                        <button key={n.label} className="db-nav-link" onClick={() => navigate(n.path)}>
-                            {n.icon} {n.label}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="db-nav-right">
-                    <div className="db-date-pick">
-                        <IcoCalendar />
-                        <input
-                            type="month"
-                            value={filterDate}
-                            onChange={e => setFilterDate(e.target.value)}
-                        />
-                    </div>
-                    <div className="db-clock">
-                        <span className="db-clock-dot" />{clock}
-                    </div>
-                    <button className="db-logout" onClick={() => navigate('/')}>
-                        <IcoLogout /> EXIT
-                    </button>
-                </div>
-            </nav>
+            <Header
+                filterDate={filterDate}
+                onDateChange={setFilterDate}
+            />
 
             {/* ── Page body ─────────────────────────────────────────────── */}
             <div className="db-body">
@@ -207,6 +193,44 @@ export default function Dashboard() {
                     <span><span className="db-status-dot" /> SYSTEM ONLINE</span>
                     <span>PERIOD // {filterDate}</span>
                     <span>ENC: AES-256</span>
+                </div>
+
+                {/* ── Create Audit Trips ──────────────────────────────── */}
+                <div className="db-audit-wrap">
+                    <button className="db-audit-header" onClick={() => setAuditOpen(o => !o)}>
+                        <span className="db-audit-header-left">
+                            <span className="db-audit-tag">// MODULE</span>
+                            <span className="db-audit-title">CREATE AUDIT TRIPS</span>
+                        </span>
+                        <span className="db-audit-header-right">
+                            <span className="db-audit-count">{auditSubs.length} ACTIONS</span>
+                            <IcoChevron open={auditOpen} />
+                        </span>
+                    </button>
+
+                    {auditOpen && (
+                        <div className="db-audit-body">
+                            {auditSubs.map((sub) => (
+                                <div
+                                    key={sub.id}
+                                    className={`db-audit-card${activeAudit === sub.id ? ' db-audit-card--active' : ''}`}
+                                    onClick={() => { setActiveAudit(sub.id); navigate(sub.path); }}
+                                >
+                                    <span className="db-audit-card-corner db-audit-card-corner--tl" />
+                                    <span className="db-audit-card-corner db-audit-card-corner--br" />
+                                    <div className="db-audit-card-icon">{sub.icon}</div>
+                                    <div className="db-audit-card-info">
+                                        <span className="db-audit-card-label">{sub.label}</span>
+                                        <span className="db-audit-card-desc">{sub.desc}</span>
+                                    </div>
+                                    <div className="db-audit-card-right">
+                                        <span className="db-audit-card-tag">{sub.tag}</span>
+                                        <span className="db-audit-card-action"><IcoPlus /> GO</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Content */}

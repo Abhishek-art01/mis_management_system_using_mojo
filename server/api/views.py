@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate, login   # ← added login
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+from datetime import date
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 @csrf_exempt
@@ -28,14 +29,22 @@ def login_view(request):
         return JsonResponse({'success': False, 'message': 'Invalid credentials'}, status=401)
 
 
-# ── Dashboard Data ────────────────────────────────────────────────────────────
+
+# helper function
+def build_month_data(year, month):
+    return {
+        "year": year,
+        "month": month
+    }
+
+# ── Dashboard Data ─────────────────────────────────────────
 @csrf_exempt
 def dashboard_data_view(request):
     if request.method != 'GET':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     today = date.today()
-    year  = int(request.GET.get('year',  today.year))
+    year  = int(request.GET.get('year', today.year))
     month = int(request.GET.get('month', today.month))
 
     # Calculate previous month
@@ -45,10 +54,9 @@ def dashboard_data_view(request):
         prev_year, prev_month = year, month - 1
 
     return JsonResponse({
-        "current":  build_month_data(year,      month),
+        "current": build_month_data(year, month),
         "previous": build_month_data(prev_year, prev_month),
     })
-
 
 
 

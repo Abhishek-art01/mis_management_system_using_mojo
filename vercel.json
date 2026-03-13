@@ -8,22 +8,26 @@
       }
     },
     {
-      "src": "backend/mis_core/wsgi.py",
+      "src": "server/mis_core/wsgi.py",
       "use": "@vercel/python"
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/backend/mis_core/wsgi.py"
+      "destination": "/server/mis_core/wsgi.py"
     },
     {
       "source": "/admin/(.*)",
-      "destination": "/backend/mis_core/wsgi.py"
+      "destination": "/server/mis_core/wsgi.py"
+    },
+    {
+      "source": "/static/(.*)",
+      "destination": "/server/mis_core/wsgi.py"
     },
     {
       "source": "/(.*)",
-      "destination": "/frontend/dist/$1"
+      "destination": "/index.html"
     }
   ]
 }

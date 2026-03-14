@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 import dj_database_url
+from dotenv import load_dotenv
 
 # ==========================================
 # 1. SECRET LOADING (Render + Local Ready)
@@ -10,28 +11,40 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load .env file into os.environ first
+load_dotenv(BASE_DIR / '.env')
+
 SECRETS_FILE = BASE_DIR / 'secrets.json'
 secrets = {}
 
-if os.path.exists(SECRETS_FILE):
+# Legacy support for secrets.json
+if SECRETS_FILE.exists():
     try:
         with open(SECRETS_FILE) as f:
             secrets = json.load(f)
     except json.JSONDecodeError:
         raise ImproperlyConfigured(f"Error decoding JSON in: {SECRETS_FILE}")
 
-def get_secret(setting_name, required=True):
+def get_secret(setting_name, required=True, default=None):
+    # 1. Check OS Env (includes .env and Render vars)
     if setting_name in os.environ:
         return os.environ[setting_name]
+        
+    # 2. Check secrets.json
     if setting_name in secrets:
         return secrets[setting_name]
+        
+    # 3. Fallback to default if provided
+    if default is not None:
+        return default
+        
+    # 4. Handle missing
     if required:
         raise ImproperlyConfigured(
             f"Missing secret: '{setting_name}'. "
-            f"Set it in secrets.json or as an Environment Variable on Render."
+            f"Set it in .env, secrets.json, or as an Environment Variable on Render."
         )
     return None
-
 
 # ==========================================
 # 2. CORE DJANGO SETTINGS
@@ -110,40 +123,41 @@ print(f"DEBUG DATABASE_URL = '{db_url[:30]}...'", file=sys.stderr)
 # 3. DATABASE CONFIGURATION
 # ==========================================
 
-db_url = (
-    os.environ.get('DATABASE_URL') or
-    secrets.get('DATABASE_URL', '')
-).strip()   # ← strip() removes hidden newlines/spaces
-
-if db_url and (db_url.startswith('postgres://') or db_url.startswith('postgresql://')):
-    try:
-        DATABASES = {
-            'default': dj_database_url.parse(
-                db_url,
-                conn_max_age=600,
-            )
-        }
-        # Add SSL for Render only
-        if 'RENDER' in os.environ:
-            DATABASES['default']['OPTIONS'] = {'sslmode': 'require'}
-    except Exception as e:
-        raise ImproperlyConfigured(
-            f"DATABASE_URL is set but could not be parsed.\n"
-            f"URL starts with: '{db_url[:40]}'\n"
-            f"Error: {e}"
+# 1. Prioritize Render's Environment
+if 'RENDER' in os.environ:
+    # Render provides DATABASE_URL automatically
+    db_url = os.environ.get('DATABASE_URL')
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=db_url,
+            conn_max_age=600,
+            conn_health_checks=True,
         )
-else:
-    # Local dev — individual fields from secrets.json
+    }
+    # Render's managed databases usually require SSL
+    DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'require'
+
+# 2. Local Development (Individual Fields)
+# This avoids the ParseError caused by special characters in passwords
+elif get_secret('DATABASE_NAME', required=False):
     DATABASES = {
         'default': {
-            'ENGINE':   'django.db.backends.postgresql',
-            'NAME':     secrets.get('DATABASE_NAME',     ''),
-            'USER':     secrets.get('DATABASE_USER',     ''),
-            'PASSWORD': secrets.get('DATABASE_PASSWORD', ''),
-            'HOST':     secrets.get('DATABASE_HOST',     ''),
-            'PORT':     secrets.get('DATABASE_PORT',     '5432'),
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME':     get_secret('DATABASE_NAME'),
+            'USER':     get_secret('DATABASE_USER'),
+            'PASSWORD': get_secret('DATABASE_PASSWORD'),
+            'HOST':     get_secret('DATABASE_HOST'),
+            'PORT':     get_secret('DATABASE_PORT', default='5432'),
         }
     }
+
+# 3. Fallback (If using a URL locally or other hosted service)
+else:
+    db_url = get_secret('DATABASE_URL', required=False)
+    if db_url:
+        DATABASES = {'default': dj_database_url.parse(db_url)}
+    else:
+        raise ImproperlyConfigured("No Database configuration found.")
 
 
 

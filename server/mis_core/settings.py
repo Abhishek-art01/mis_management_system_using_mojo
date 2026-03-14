@@ -144,17 +144,7 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
 }
 
-# FIX: django-cloudinary-storage 0.3.0 is not compatible with Django 6's
-# WhiteNoise post-processing pipeline — it corrupts the collection flow,
-# causing FileNotFoundError when WhiteNoise tries to compress files it
-# registered but never actually wrote to disk.
-#
-# Using plain StaticFilesStorage skips all post-processing (compression,
-# manifest) at build time. WhiteNoise middleware still serves files with
-# on-the-fly gzip/brotli at runtime, so performance is unaffected.
-#
-# Legacy STATICFILES_STORAGE kept for django-cloudinary-storage compatibility
-# (it does a direct attribute lookup that Django 6 no longer provides).
+# Legacy setting required by django-cloudinary-storage (Django 6 dropped it)
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 STORAGES = {
@@ -170,7 +160,9 @@ STORAGES = {
 # 5. CORS & SESSION SETTINGS
 # ==========================================
 
-_frontend_url = os.environ.get('FRONTEND_URL', secrets.get('FRONTEND_URL', ''))
+# FIX: Strip trailing slash — CORS_ALLOWED_ORIGINS must be scheme+host only,
+# no trailing slash or path (corsheaders raises E014 if one is present).
+_frontend_url = os.environ.get('FRONTEND_URL', secrets.get('FRONTEND_URL', '')).rstrip('/')
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",

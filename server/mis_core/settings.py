@@ -97,24 +97,43 @@ WSGI_APPLICATION = 'mis_core.wsgi.application'
 # ==========================================
 # 3. DATABASE CONFIGURATION
 # ==========================================
-
-# Check all possible sources for DATABASE_URL
+# TEMPORARY DEBUG — remove after fixing
+import sys
 db_url = (
     os.environ.get('DATABASE_URL') or
     secrets.get('DATABASE_URL', '')
 )
+print(f"DEBUG DATABASE_URL = '{db_url[:30]}...'", file=sys.stderr)
 
-if db_url.startswith('postgres://') or db_url.startswith('postgresql://'):
-    # Production (Render) or any cloud DB
-    DATABASES = {
-        'default': dj_database_url.parse(
-            db_url,
-            conn_max_age=600,
-            ssl_require='RENDER' in os.environ,  # SSL only on Render
+
+# ==========================================
+# 3. DATABASE CONFIGURATION
+# ==========================================
+
+db_url = (
+    os.environ.get('DATABASE_URL') or
+    secrets.get('DATABASE_URL', '')
+).strip()   # ← strip() removes hidden newlines/spaces
+
+if db_url and (db_url.startswith('postgres://') or db_url.startswith('postgresql://')):
+    try:
+        DATABASES = {
+            'default': dj_database_url.parse(
+                db_url,
+                conn_max_age=600,
+            )
+        }
+        # Add SSL for Render only
+        if 'RENDER' in os.environ:
+            DATABASES['default']['OPTIONS'] = {'sslmode': 'require'}
+    except Exception as e:
+        raise ImproperlyConfigured(
+            f"DATABASE_URL is set but could not be parsed.\n"
+            f"URL starts with: '{db_url[:40]}'\n"
+            f"Error: {e}"
         )
-    }
 else:
-    # Local development using individual fields from secrets.json
+    # Local dev — individual fields from secrets.json
     DATABASES = {
         'default': {
             'ENGINE':   'django.db.backends.postgresql',
@@ -126,22 +145,6 @@ else:
         }
     }
 
-
-# ==========================================
-# 4. PASSWORD VALIDATION & I18N
-# ==========================================
-
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
-
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE     = 'UTC'
-USE_I18N      = True
-USE_TZ        = True
 
 
 # ==========================================

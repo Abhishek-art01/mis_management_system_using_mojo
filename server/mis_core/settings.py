@@ -11,13 +11,11 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load .env file into os.environ first
 load_dotenv(BASE_DIR / '.env')
 
 SECRETS_FILE = BASE_DIR / 'secrets.json'
 secrets = {}
 
-# Legacy support for secrets.json
 if SECRETS_FILE.exists():
     try:
         with open(SECRETS_FILE) as f:
@@ -26,19 +24,12 @@ if SECRETS_FILE.exists():
         raise ImproperlyConfigured(f"Error decoding JSON in: {SECRETS_FILE}")
 
 def get_secret(setting_name, required=True, default=None):
-    # 1. Check OS Env (includes .env and Render vars)
     if setting_name in os.environ:
         return os.environ[setting_name]
-        
-    # 2. Check secrets.json
     if setting_name in secrets:
         return secrets[setting_name]
-        
-    # 3. Fallback to default if provided
     if default is not None:
         return default
-        
-    # 4. Handle missing
     if required:
         raise ImproperlyConfigured(
             f"Missing secret: '{setting_name}'. "
@@ -51,14 +42,12 @@ def get_secret(setting_name, required=True, default=None):
 # ==========================================
 
 SECRET_KEY = get_secret('SECRET_KEY')
-DEBUG      = str(get_secret('DEBUG', required=False) or 'false').lower() in ['true', '1', 't']
+DEBUG = str(get_secret('DEBUG', required=False) or 'false').lower() in ['true', '1', 't']
 
-# On Render RENDER_EXTERNAL_HOSTNAME is auto-set — include it if present
 _render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 if _render_host:
     ALLOWED_HOSTS.append(_render_host)
-
 
 INSTALLED_APPS = [
     'jazzmin',
@@ -74,7 +63,6 @@ INSTALLED_APPS = [
     'api',
 ]
 
-# WhiteNoise is already here — do NOT insert it again anywhere
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -110,9 +98,7 @@ WSGI_APPLICATION = 'mis_core.wsgi.application'
 # 3. DATABASE CONFIGURATION
 # ==========================================
 
-# 1. Prioritize Render's Environment
 if 'RENDER' in os.environ:
-    # Render provides DATABASE_URL automatically
     db_url = os.environ.get('DATABASE_URL')
     DATABASES = {
         'default': dj_database_url.config(
@@ -121,15 +107,12 @@ if 'RENDER' in os.environ:
             conn_health_checks=True,
         )
     }
-    # Render's managed databases usually require SSL
     DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'require'
 
-# 2. Local Development (Individual Fields)
-# This avoids the ParseError caused by special characters in passwords
 elif get_secret('DATABASE_NAME', required=False):
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
+            'ENGINE':   'django.db.backends.postgresql',
             'NAME':     get_secret('DATABASE_NAME'),
             'USER':     get_secret('DATABASE_USER'),
             'PASSWORD': get_secret('DATABASE_PASSWORD'),
@@ -138,14 +121,13 @@ elif get_secret('DATABASE_NAME', required=False):
         }
     }
 
-# 3. Fallback (If using a URL locally or other hosted service)
 else:
     db_url = get_secret('DATABASE_URL', required=False)
     if db_url:
         DATABASES = {'default': dj_database_url.parse(db_url)}
     else:
-        raise ImproperlyConfigured("No Database configuration found.")
-    
+        raise ImproperlyConfigured("No database configuration found.")
+
 # ==========================================
 # 4. STATIC & MEDIA FILES
 # ==========================================
@@ -162,16 +144,11 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
 }
 
-# FIX 1: django-cloudinary-storage still reads the legacy STATICFILES_STORAGE
-# attribute at runtime. Django 4.2+ removed it in favour of STORAGES, so we
-# must define BOTH to satisfy the old package code without crashing Django 6.
+# Legacy setting required by django-cloudinary-storage (not updated for Django 6)
+# Must point to CompressedStaticFilesStorage — NOT CompressedManifestStaticFilesStorage
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
-# FIX 2: WHITENOISE_MANIFEST_STRICT stops WhiteNoise raising MissingFileError
-# when Bootstrap's minified JS references a .map file that isn't present.
-WHITENOISE_MANIFEST_STRICT = False
-
-# Modern Django 4.2+ STORAGES dict (takes precedence over legacy setting)
+# Modern Django STORAGES dict — must match STATICFILES_STORAGE above
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -180,36 +157,9 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
-# ==========================================
-# 5. STATIC & MEDIA FILES
-# ==========================================
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': get_secret('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY':    get_secret('CLOUDINARY_API_KEY'),
-    'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
-}
-
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-MEDIA_URL  = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-STATIC_URL  = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
-
 
 # ==========================================
-# 6. CORS & SESSION SETTINGS
+# 5. CORS & SESSION SETTINGS
 # ==========================================
 
 _frontend_url = os.environ.get('FRONTEND_URL', secrets.get('FRONTEND_URL', ''))
@@ -226,9 +176,8 @@ CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 SESSION_COOKIE_SECURE   = not DEBUG
 
-
 # ==========================================
-# 7. JAZZMIN ADMIN THEME
+# 6. JAZZMIN ADMIN THEME
 # ==========================================
 
 JAZZMIN_SETTINGS = {

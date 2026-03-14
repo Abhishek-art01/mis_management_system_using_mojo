@@ -162,10 +162,16 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
 }
 
-# FIX: Use CompressedStaticFilesStorage to avoid MissingFileError
-# caused by bootstrap.bundle.min.js referencing a missing .map file.
+# FIX 1: django-cloudinary-storage still reads the legacy STATICFILES_STORAGE
+# attribute at runtime. Django 4.2+ removed it in favour of STORAGES, so we
+# must define BOTH to satisfy the old package code without crashing Django 6.
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+# FIX 2: WHITENOISE_MANIFEST_STRICT stops WhiteNoise raising MissingFileError
+# when Bootstrap's minified JS references a .map file that isn't present.
 WHITENOISE_MANIFEST_STRICT = False
 
+# Modern Django 4.2+ STORAGES dict (takes precedence over legacy setting)
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -174,7 +180,6 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
-
 # ==========================================
 # 5. STATIC & MEDIA FILES
 # ==========================================

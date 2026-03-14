@@ -56,15 +56,26 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (loading) return;
-    setErrorMsg(''); setLoading(true); setBtnLabel('AUTHENTICATING...');
+    setErrorMsg(''); 
+    setLoading(true); 
+    setBtnLabel('AUTHENTICATING...');
+
+    // Dynamic API Base: Use localhost if developing, empty string (relative) if on Vercel
+    const API_BASE = window.location.hostname === 'localhost' 
+      ? 'http://localhost:8002' 
+      : '';
+
     try {
-      const response = await fetch('http://localhost:8002/api/login/', {
+      // Calling relative path /api/login/ which is handled by vercel.json rewrites
+      const response = await fetch(`${API_BASE}/api/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ username: identifier, password }),
       });
+
       const data = await response.json();
+
       if (response.ok && data.success) {
         setBtnLabel('ACCESS GRANTED ✓');
         setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
@@ -74,7 +85,7 @@ export default function Login() {
         setTimeout(() => { setBtnLabel('INITIALIZE SESSION'); setLoading(false); }, 1500);
       }
     } catch (err) {
-      setErrorMsg('Cannot reach server — is Django running on port 8002?');
+      setErrorMsg('Cannot reach authentication server.');
       setBtnLabel('CONNECTION FAILED ✗');
       setTimeout(() => { setBtnLabel('INITIALIZE SESSION'); setLoading(false); }, 1500);
     }

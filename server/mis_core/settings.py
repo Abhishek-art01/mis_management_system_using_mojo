@@ -145,9 +145,11 @@ else:
         DATABASES = {'default': dj_database_url.parse(db_url)}
     else:
         raise ImproperlyConfigured("No Database configuration found.")
+    
 # ==========================================
-# 4. STORAGE (Static Files & Cloudinary)
+# 4. STATIC & MEDIA FILES
 # ==========================================
+
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -156,24 +158,22 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': get_secret('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': get_secret('CLOUDINARY_API_KEY'),
+    'API_KEY':    get_secret('CLOUDINARY_API_KEY'),
     'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
 }
 
-# Add this line to satisfy django-cloudinary-storage during collectstatic
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# FIX: Use CompressedStaticFilesStorage to avoid MissingFileError
+# caused by bootstrap.bundle.min.js referencing a missing .map file.
+WHITENOISE_MANIFEST_STRICT = False
 
-# Keep your modern STORAGES dictionary
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
-
-
 
 # ==========================================
 # 5. STATIC & MEDIA FILES

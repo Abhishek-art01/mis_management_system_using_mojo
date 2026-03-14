@@ -106,19 +106,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'mis_core.wsgi.application'
 
-
-# ==========================================
-# 3. DATABASE CONFIGURATION
-# ==========================================
-# TEMPORARY DEBUG — remove after fixing
-import sys
-db_url = (
-    os.environ.get('DATABASE_URL') or
-    secrets.get('DATABASE_URL', '')
-)
-print(f"DEBUG DATABASE_URL = '{db_url[:30]}...'", file=sys.stderr)
-
-
 # ==========================================
 # 3. DATABASE CONFIGURATION
 # ==========================================
@@ -158,6 +145,33 @@ else:
         DATABASES = {'default': dj_database_url.parse(db_url)}
     else:
         raise ImproperlyConfigured("No Database configuration found.")
+# ==========================================
+# 4. STORAGE (Static Files & Cloudinary)
+# ==========================================
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': get_secret('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': get_secret('CLOUDINARY_API_KEY'),
+    'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
+}
+
+# Add this line to satisfy django-cloudinary-storage during collectstatic
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Keep your modern STORAGES dictionary
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 
 

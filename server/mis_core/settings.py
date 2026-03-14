@@ -5,7 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 import dj_database_url
 
 # ==========================================
-# 1. SECRET LOADING (Vercel + Local Ready)
+# 1. SECRET LOADING (Render + Local Ready)
 # ==========================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -13,7 +13,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRETS_FILE = BASE_DIR / 'secrets.json'
 secrets = {}
 
-# Only try to load the file if it exists (prevents crashes on Vercel)
 if os.path.exists(SECRETS_FILE):
     try:
         with open(SECRETS_FILE) as f:
@@ -21,49 +20,52 @@ if os.path.exists(SECRETS_FILE):
     except json.JSONDecodeError:
         raise ImproperlyConfigured(f"Error decoding JSON in: {SECRETS_FILE}")
 
-def get_secret(setting_name):
-    # 1st Check: Vercel / OS Environment Variables
+def get_secret(setting_name, required=True):
     if setting_name in os.environ:
         return os.environ[setting_name]
-    
-    # 2nd Check: Local secrets.json file
     if setting_name in secrets:
         return secrets[setting_name]
-        
-    # If not found anywhere, crash with a helpful message
-    raise ImproperlyConfigured(f"Missing secret: {setting_name}. Set it in secrets.json or Vercel Environment Variables.")
+    if required:
+        raise ImproperlyConfigured(
+            f"Missing secret: '{setting_name}'. "
+            f"Set it in secrets.json or as an Environment Variable on Render."
+        )
+    return None
 
 
 # ==========================================
 # 2. CORE DJANGO SETTINGS
 # ==========================================
 
-# Dynamically load crucial settings
 SECRET_KEY = get_secret('SECRET_KEY')
-# Converts string "True" from env var into an actual boolean
-DEBUG = str(get_secret('DEBUG')).lower() in ['true', '1', 't'] 
+DEBUG      = str(get_secret('DEBUG', required=False) or 'false').lower() in ['true', '1', 't']
 
-ALLOWED_HOSTS = ['*']
+# On Render RENDER_EXTERNAL_HOSTNAME is auto-set — include it if present
+_render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+if _render_host:
+    ALLOWED_HOSTS.append(_render_host)
 
 
 INSTALLED_APPS = [
-    'jazzmin',                              # must be before django.contrib.admin
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage',                   # Cloudinary must be before staticfiles
+    'cloudinary_storage',
     'django.contrib.staticfiles',
-    'cloudinary',                           # Cloudinary app
+    'cloudinary',
     'corsheaders',
     'api',
 ]
 
+# WhiteNoise is already here — do NOT insert it again anywhere
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',        # must be first
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',   # serves static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -92,49 +94,39 @@ TEMPLATES = [
 WSGI_APPLICATION = 'mis_core.wsgi.application'
 
 
-# Only applies when deployed on Render
-if 'RENDER' in os.environ:
-    DEBUG = False
-    ALLOWED_HOSTS = [os.environ.get('RENDER_EXTERNAL_HOSTNAME')]
-
-    # Database — uses Render's PostgreSQL
-    DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600)
-    }
-
-    # Static files with Whitenoise
-    MIDDLEWARE.insert(
-        MIDDLEWARE.index('django.middleware.security.SecurityMiddleware') + 1,
-        'whitenoise.middleware.WhiteNoiseMiddleware'
-    )
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-
 # ==========================================
-# 3. DATABASE CONFIGURATION (Supabase/Neon)
+# 3. DATABASE CONFIGURATION
 # ==========================================
 
-# Safely check for DATABASE_URL (returns an empty string if it doesn't exist)
-db_url = os.environ.get('DATABASE_URL', secrets.get('DATABASE_URL', ''))
+# Check all possible sources for DATABASE_URL
+db_url = (
+    os.environ.get('DATABASE_URL') or
+    secrets.get('DATABASE_URL', '')
+)
 
 if db_url.startswith('postgres://') or db_url.startswith('postgresql://'):
-    # On Vercel: Let dj_database_url handle the connection string
+    # Production (Render) or any cloud DB
     DATABASES = {
-        'default': dj_database_url.parse(db_url)
+        'default': dj_database_url.parse(
+            db_url,
+            conn_max_age=600,
+            ssl_require='RENDER' in os.environ,  # SSL only on Render
+        )
     }
 else:
-    # Locally: Map it manually using the individual fields from secrets.json
+    # Local development using individual fields from secrets.json
     DATABASES = {
         'default': {
             'ENGINE':   'django.db.backends.postgresql',
-            'NAME':     secrets.get('DATABASE_NAME', ''),
-            'USER':     secrets.get('DATABASE_USER', ''),
+            'NAME':     secrets.get('DATABASE_NAME',     ''),
+            'USER':     secrets.get('DATABASE_USER',     ''),
             'PASSWORD': secrets.get('DATABASE_PASSWORD', ''),
-            'HOST':     secrets.get('DATABASE_HOST', ''),
-            'PORT':     secrets.get('DATABASE_PORT', '5432'),
+            'HOST':     secrets.get('DATABASE_HOST',     ''),
+            'PORT':     secrets.get('DATABASE_PORT',     '5432'),
         }
     }
+
+
 # ==========================================
 # 4. PASSWORD VALIDATION & I18N
 # ==========================================
@@ -153,23 +145,20 @@ USE_TZ        = True
 
 
 # ==========================================
-# 5. STATIC & MEDIA FILES (Cloudinary)
+# 5. STATIC & MEDIA FILES
 # ==========================================
 
-# Cloudinary Credentials
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': get_secret('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': get_secret('CLOUDINARY_API_KEY'),
+    'API_KEY':    get_secret('CLOUDINARY_API_KEY'),
     'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
 }
 
-# Route media files to Cloudinary
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 MEDIA_URL  = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Standard Static Files (Handled by WhiteNoise)
 STATIC_URL  = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -187,15 +176,19 @@ STORAGES = {
 # 6. CORS & SESSION SETTINGS
 # ==========================================
 
+_frontend_url = os.environ.get('FRONTEND_URL', secrets.get('FRONTEND_URL', ''))
+
 CORS_ALLOWED_ORIGINS = [
-    os.environ.get('FRONTEND_URL', 'http://localhost:5173'),
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
-CORS_ALLOW_CREDENTIALS = True      # required for session cookies cross-origin
+if _frontend_url:
+    CORS_ALLOWED_ORIGINS.append(_frontend_url)
 
-SESSION_COOKIE_SAMESITE = 'Lax'    # safe for local dev
-SESSION_COOKIE_SECURE   = not DEBUG # Will be True in Prod, False locally
+CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
+SESSION_COOKIE_SECURE   = not DEBUG
 
 
 # ==========================================
@@ -203,16 +196,11 @@ SESSION_COOKIE_SECURE   = not DEBUG # Will be True in Prod, False locally
 # ==========================================
 
 JAZZMIN_SETTINGS = {
-    "site_title":    "MIS Admin",
-    "site_header":   "MIS Management",
-    "site_brand":    "MIS System",
-    "welcome_sign":  "Welcome to the MIS Management System",
-    "copyright":     "Project-767",
+    "site_title":   "MIS Admin",
+    "site_header":  "MIS Management",
+    "site_brand":   "MIS System",
+    "welcome_sign": "Welcome to the MIS Management System",
+    "copyright":    "Project-767",
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-
-
-

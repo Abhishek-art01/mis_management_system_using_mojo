@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from datetime import date
 
+
 # ── Login ─────────────────────────────────────────────────────────────────────
 @csrf_exempt
 def login_view(request):

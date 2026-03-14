@@ -49,6 +49,19 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 if _render_host:
     ALLOWED_HOSTS.append(_render_host)
 
+# FIX: CSRF_TRUSTED_ORIGINS must include the full https:// origin for any
+# host that submits POST forms. Without this Django rejects all POSTs on HTTPS.
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+]
+if _render_host:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{_render_host}')
+
+_frontend_url = os.environ.get('FRONTEND_URL', secrets.get('FRONTEND_URL', '')).rstrip('/')
+if _frontend_url:
+    CSRF_TRUSTED_ORIGINS.append(_frontend_url)
+
 INSTALLED_APPS = [
     'jazzmin',
     'django.contrib.admin',
@@ -144,7 +157,6 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
 }
 
-# Legacy setting required by django-cloudinary-storage (Django 6 dropped it)
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 STORAGES = {
@@ -159,10 +171,6 @@ STORAGES = {
 # ==========================================
 # 5. CORS & SESSION SETTINGS
 # ==========================================
-
-# FIX: Strip trailing slash — CORS_ALLOWED_ORIGINS must be scheme+host only,
-# no trailing slash or path (corsheaders raises E014 if one is present).
-_frontend_url = os.environ.get('FRONTEND_URL', secrets.get('FRONTEND_URL', '')).rstrip('/')
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",

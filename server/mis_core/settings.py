@@ -45,6 +45,7 @@ DEBUG = str(get_secret('DEBUG')).lower() in ['true', '1', 't']
 
 ALLOWED_HOSTS = ['*']
 
+
 INSTALLED_APPS = [
     'jazzmin',                              # must be before django.contrib.admin
     'django.contrib.admin',
@@ -89,6 +90,25 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'mis_core.wsgi.application'
+
+
+# Only applies when deployed on Render
+if 'RENDER' in os.environ:
+    DEBUG = False
+    ALLOWED_HOSTS = [os.environ.get('RENDER_EXTERNAL_HOSTNAME')]
+
+    # Database — uses Render's PostgreSQL
+    DATABASES = {
+        'default': dj_database_url.config(conn_max_age=600)
+    }
+
+    # Static files with Whitenoise
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index('django.middleware.security.SecurityMiddleware') + 1,
+        'whitenoise.middleware.WhiteNoiseMiddleware'
+    )
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # ==========================================
@@ -168,6 +188,7 @@ STORAGES = {
 # ==========================================
 
 CORS_ALLOWED_ORIGINS = [
+    os.environ.get('FRONTEND_URL', 'http://localhost:5173'),
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
@@ -193,25 +214,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 
-# Only applies when deployed on Render
-if 'RENDER' in os.environ:
-    DEBUG = False
-    ALLOWED_HOSTS = [os.environ.get('RENDER_EXTERNAL_HOSTNAME')]
 
-    # Database — uses Render's PostgreSQL
-    DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600)
-    }
 
-    # Static files with Whitenoise
-    MIDDLEWARE.insert(
-        MIDDLEWARE.index('django.middleware.security.SecurityMiddleware') + 1,
-        'whitenoise.middleware.WhiteNoiseMiddleware'
-    )
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# CORS — allow your Vercel frontend
-CORS_ALLOWED_ORIGINS = [
-    os.environ.get('FRONTEND_URL', 'http://localhost:5173'),
-]

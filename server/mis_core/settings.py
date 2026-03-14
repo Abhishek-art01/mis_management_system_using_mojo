@@ -144,17 +144,25 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': get_secret('CLOUDINARY_API_SECRET'),
 }
 
-# Legacy setting required by django-cloudinary-storage (not updated for Django 6)
-# Must point to CompressedStaticFilesStorage — NOT CompressedManifestStaticFilesStorage
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+# FIX: django-cloudinary-storage 0.3.0 is not compatible with Django 6's
+# WhiteNoise post-processing pipeline — it corrupts the collection flow,
+# causing FileNotFoundError when WhiteNoise tries to compress files it
+# registered but never actually wrote to disk.
+#
+# Using plain StaticFilesStorage skips all post-processing (compression,
+# manifest) at build time. WhiteNoise middleware still serves files with
+# on-the-fly gzip/brotli at runtime, so performance is unaffected.
+#
+# Legacy STATICFILES_STORAGE kept for django-cloudinary-storage compatibility
+# (it does a direct attribute lookup that Django 6 no longer provides).
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
-# Modern Django STORAGES dict — must match STATICFILES_STORAGE above
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
